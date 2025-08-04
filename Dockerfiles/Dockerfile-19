@@ -1,0 +1,8 @@
+FROM ubuntu
+
+ENV MY_VAR1="Hello, from MY_VAR1 value1!!!"
+ENV MY_VAR2="Hello, from MY_VAR1 value2!!!"
+
+CMD ["bash", "-c", "env"]
+
+

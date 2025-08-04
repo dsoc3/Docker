@@ -1,0 +1,52 @@
+# Stage 1: Build the Maven project using a slim Alpine image
+FROM maven:3.9.11-eclipse-temurin-21-alpine AS builder
+
+# Install git and clone the project
+RUN apk add --no-cache git \
+    && git clone https://github.com/dsoc3/DSOC3-WebApp.git /app
+
+# Build the project
+WORKDIR /app
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime image with Tomcat + JRE on Alpine
+FROM alpine:latest
+
+# Set environment variables
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk \
+    CATALINA_HOME=/usr/local/tomcat \
+    PATH="$JAVA_HOME/bin:$CATALINA_HOME/bin:$PATH" \
+    TOMCAT_VERSION=10.1.43 \
+    TZ=Europe/Berlin
+
+# Install dependencies and configure timezone
+RUN apk add --no-cache \
+    openjdk21-jre \
+    wget \
+    tar \
+    bash \
+    tzdata \
+    && cp /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo "$TZ" > /etc/timezone \
+    && rm -rf /var/cache/apk/*
+
+# Download and install Tomcat using ENV variables
+RUN mkdir -p "$CATALINA_HOME" \
+    && wget -q "https://dlcdn.apache.org/tomcat/tomcat-10/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz" -O /tmp/tomcat.tar.gz \
+    && tar -xzf /tmp/tomcat.tar.gz -C "$CATALINA_HOME" --strip-components=1 \
+    && rm -rf /tmp/tomcat.tar.gz \
+    && rm -rf "$CATALINA_HOME"/webapps/* \
+    && rm -rf "$CATALINA_HOME"/logs/* \
+    && rm -rf "$CATALINA_HOME"/temp/* \
+    && rm -rf "$CATALINA_HOME"/work/*
+
+# Copy WAR file from builder stage
+COPY --from=builder /app/target/*.war "$CATALINA_HOME"/webapps/
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Start Tomcat using ENV path
+#CMD ["catalina.sh", "run"]
+CMD ["/usr/local/tomcat/bin/catalina.sh", "run"]
+

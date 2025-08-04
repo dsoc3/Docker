@@ -1,0 +1,24 @@
+# Stage 1: Build the Maven project using a slim image
+FROM  maven:3.9.11-eclipse-temurin-21-alpine AS builder
+# Install git (needed for cloning)
+RUN apk add --no-cache git
+
+# Clone and build the project
+RUN git clone https://github.com/dsoc3/DSOC3-WebApp.git /app
+WORKDIR /app
+RUN mvn clean package -DskipTests
+
+# Stage 2: Runtime image using slim Tomcat
+FROM tomcat:11.0.9-jre21-temurin AS tagret
+
+# Remove default apps to reduce size
+RUN rm -rf /usr/local/tomcat/webapps/*
+
+# Copy WAR file from builder stage
+COPY --from=builder /app/target/*.war  /usr/local/tomcat/webapps
+
+# Expose port
+EXPOSE 8080
+
+# Start Tomcat
+CMD ["catalina.sh", "run"]

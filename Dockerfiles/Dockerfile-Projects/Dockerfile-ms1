@@ -1,0 +1,35 @@
+# Stage 1: Build the Maven project
+FROM maven AS builder
+
+# Set environment variables for Maven
+ENV MAVEN_HOME=/usr/local/maven \
+    PATH=${MAVEN_HOME}/bin:${PATH}
+
+# Update the package manager and install necessary dependencies
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Clone the Maven project into the container
+RUN git clone https://github.com/dsoc3/DSOC3-WebApp.git /tmp/DSOC3-WebApp
+
+# Change to the project directory and build the Maven project
+WORKDIR /tmp/DSOC3-WebApp
+RUN mvn clean install
+
+# Stage 2: Create the runtime image
+FROM tomcat
+
+# Set environment variables for Tomcat
+ENV CATALINA_HOME=/usr/local/tomcat \
+    PATH=${CATALINA_HOME}/bin:${PATH}
+
+# Copy the generated WAR file to the Tomcat webapps directory
+COPY --from=builder /tmp/DSOC3-WebApp/target/*.war $CATALINA_HOME/webapps/
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Command to start Tomcat
+CMD ["catalina.sh", "run"]
+

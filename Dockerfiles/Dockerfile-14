@@ -1,0 +1,9 @@
+FROM ubuntu
+
+WORKDIR /DSOC3
+
+#Shell form
+#CMD echo "Hello From Dockerfile CMD..."
+
+#JSON form
+CMD ["echo", "Hello From Dockerfile CMD JSON Form..."]

@@ -1,0 +1,68 @@
+# 1 Use an official Ubuntu base image
+FROM ubuntu:latest
+
+# Maintainer metadata
+LABEL maintainer="devsecops.club@gmail.com"
+LABEL version="1.0"
+LABEL description="An Ubuntu-based image with OpenJDK 24, Maven, and Tomcat 10 installed"
+
+# Set environment variables for Maven, Tomcat, and OpenJDK
+ENV DEBIAN_FRONTEND=noninteractive
+ENV MAVEN_VERSION=3.9.11
+ENV TOMCAT_VERSION=10.1.43
+ENV MAVEN_HOME=/usr/local/maven
+ENV PATH=$MAVEN_HOME/bin:$PATH
+ENV TOMCAT_HOME=/usr/local/tomcat
+ENV JAVA_HOME=/usr/local/openjdk-24
+ENV PATH=$JAVA_HOME/bin:$PATH
+ENV PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/maven/bin:/usr/local/openjdk-24/bin
+# Update the package manager and install necessary dependencies
+
+RUN apt-get update && apt-get install -y \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Download and install OpenJDK 24
+ADD https://download.java.net/java/GA/jdk24/1f9ff9062db4449d8ca828c504ffae90/36/GPL/openjdk-24_linux-aarch64_bin.tar.gz /tmp/openjdk.tar.gz
+RUN mkdir -p $JAVA_HOME \
+    && tar -xzf /tmp/openjdk.tar.gz -C $JAVA_HOME --strip-components=1 \
+    && rm /tmp/openjdk.tar.gz
+
+# Verify Java installation
+RUN java -version
+
+# Install Maven
+ADD https://dlcdn.apache.org/maven/maven-3/${MAVEN_VERSION}/binaries/apache-maven-${MAVEN_VERSION}-bin.tar.gz /tmp/maven.tar.gz
+RUN mkdir -p $MAVEN_HOME \
+    && tar -xzf /tmp/maven.tar.gz -C $MAVEN_HOME --strip-components=1 \
+    && rm /tmp/maven.tar.gz
+
+# Verify Maven installation
+RUN $MAVEN_HOME/bin/mvn -version
+
+# Install Tomcat
+ADD https://dlcdn.apache.org/tomcat/tomcat-10/v${TOMCAT_VERSION}/bin/apache-tomcat-${TOMCAT_VERSION}.tar.gz /tmp/tomcat.tar.gz
+RUN mkdir -p $TOMCAT_HOME \
+    && tar -xzf /tmp/tomcat.tar.gz -C $TOMCAT_HOME --strip-components=1 \
+    && rm /tmp/tomcat.tar.gz
+
+
+#### APPLICATION BUILDING
+# Clone the Maven project into the container
+RUN git clone https://github.com/dsoc3/DSOC3-WebApp.git /tmp/DSOC3-WebApp
+
+# Change to the project directory and build the Maven project
+WORKDIR /tmp/DSOC3-WebApp
+RUN mvn clean install
+
+# Copy the generated WAR file to the Tomcat webapps directory
+RUN cp target/*.war /usr/local/tomcat/webapps/
+
+# Expose Tomcat port
+EXPOSE 8080
+
+# Set working directory
+WORKDIR $TOMCAT_HOME
+
+# Command to start Tomcat
+CMD ["bin/catalina.sh", "run"]

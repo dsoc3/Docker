@@ -1,0 +1,10 @@
+FROM ubuntu
+
+ENV MY_VAR1="Hello, from MY_VAR1 value1!!!"
+ENV MY_VAR2="Hello, from MY_VAR1 value2!!!"
+ENV APP_HOME="/DSOC3"
+ENV APP_PORT="8080"
+
+WORKDIR $APP_HOME
+
+CMD ["bash", "-c", "echo The Values of APP_HOME is: $APP_HOME; echo The Value of APP_PORT is:  $APP_PORT"]

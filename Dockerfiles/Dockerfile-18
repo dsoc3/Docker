@@ -1,0 +1,16 @@
+FROM ubuntu
+
+WORKDIR /DSOC3
+
+#Copy file1
+COPY f1 .
+
+#ADD Script
+ADD cmd-script.sh .
+RUN chmod +x cmd-script.sh
+#JSON form
+#CMD ["echo", "Hello From Dockerfile CMD JSON Form..."]
+#CMD ["cat", "f1"]
+#CMD ["ls", "-lrt", "/DSOC3"]
+#CMD ["bash", "cmd-script.sh"]
+CMD ["/DSOC3/cmd-script.sh"]

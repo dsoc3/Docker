@@ -1,0 +1,6 @@
+FROM ubuntu
+
+WORKDIR /DSOC3
+
+CMD echo "Hello From Dockerfile CMD..."
+
